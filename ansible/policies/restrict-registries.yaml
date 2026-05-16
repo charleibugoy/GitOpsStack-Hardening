@@ -1,0 +1,18 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: restrict-registries
+spec:
+  validationFailureAction: Enforce
+  rules:
+  - name: allowed-registries
+    match:
+      any:
+      - resources:
+          kinds: ["Pod"]
+    validate:
+      message: "Only Iron Bank and internal registries are allowed."
+      pattern:
+        spec:
+          containers:
+          - image: "registry1.dso.mil/* | *.internal.company.mil/*"

@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: secure-nginx
+  labels:
+    app: secure-nginx
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: secure-nginx
+  template:
+    metadata:
+      labels:
+        app: secure-nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.25.3
+        ports:
+        - containerPort: 80
+        securityContext:
+          # Simulating DoD hardening requirements (e.g., dropping capabilities)
+          allowPrivilegeEscalation: false
+          runAsNonRoot: false 
+          capabilities:
+            drop:
+              - ALL

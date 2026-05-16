@@ -1,0 +1,19 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-root-user
+spec:
+  validationFailureAction: Enforce
+  rules:
+  - name: check-run-as-non-root
+    match:
+      any: [ { "resources": { "kinds": ["Pod"] } } ]
+    validate:
+      message: "Running as root is not allowed per DoD STIG."
+      pattern:
+        spec:
+          securityContext:
+            runAsNonRoot: true
+          containers:
+          - securityContext:
+              runAsNonRoot: true

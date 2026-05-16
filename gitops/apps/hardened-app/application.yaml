@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: hardened-app
+  namespace: argocd
+spec:
+  source:
+    repoURL: https://github.com/charliebugoy/gitops-repo.git
+    targetRevision: HEAD
+    path: gitops/apps/hardened-app
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: production
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

@@ -1,0 +1,25 @@
+---
+- name: Deploy DevSecOps Platform
+  hosts: localhost
+  collections:
+    - kubernetes.core
+  vars:
+    kubeconfig: "~/.kube/config"
+  tasks:
+    - name: Deploy Kyverno
+      helm:
+        name: kyverno
+        chart: kyverno/kyverno
+        namespace: kyverno
+        create_namespace: true
+        kubeconfig: "{{ kubeconfig }}"
+
+    - name: Apply Kyverno Policies
+      k8s:
+        state: present
+        src: "{{ item }}"
+        kubeconfig: "{{ kubeconfig }}"
+      loop:
+        - ../policies/restrict-registries.yaml
+        - ../policies/disallow-root-user.yaml
+        - ../policies/require-readonly-rootfs.yaml

@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Create Amazon EKS Cluster - demo-eks (EKS Auto Mode disabled) using Default VPC'
+
+Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC ID (use your Default VPC ID)
+    Default: vpc-0ed82d4ffae0421d5   # ← Replace with your actual default VPC ID
+
+  PrivateSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: At least 2 Private Subnet IDs from your Default VPC (recommended for EKS)
+    Default: "subnet-00d9237e84d80253a,subnet-03aa5fcd1d0eab56a"   # ← Replace with your actual private subnet IDs
+
+  ClusterRoleArn:
+    Type: String
+    Default: "arn:aws:iam::637423448740:role/eksClusterRole"
+    Description: ARN of the eksClusterRole
+
+Resources:
+  DemoEKSCluster:
+    Type: AWS::EKS::Cluster
+    Properties:
+      Name: demo-eks
+      RoleArn: !Ref ClusterRoleArn
+      Version: "1.31"     # Change if you want a different Kubernetes version
+
+      # Cluster Access Configuration
+      AccessConfig:
+        AuthenticationMode: API_AND_CONFIG_MAP
+        BootstrapClusterCreatorAdminPermissions: true
+
+      # Disable EKS Auto Mode (Custom / Self-managed configuration)
+      ComputeConfig:
+        Enabled: false
+      StorageConfig:
+        BlockStorage:
+          Enabled: false
+      KubernetesNetworkConfig:
+        ElasticLoadBalancing:
+          Enabled: false
+
+      # Networking - Using Default VPC + Private Subnets
+      ResourcesVpcConfig:
+        VpcId: !Ref VpcId
+        SubnetIds: !Ref PrivateSubnetIds
+        EndpointPublicAccess: true
+        EndpointPrivateAccess: true
+
+      # Recommended Logging
+      Logging:
+        ClusterLogging:
+          - Enabled: true
+            Types:
+              - api
+              - audit
+              - authenticator
+              - controllerManager
+              - scheduler
+
+Outputs:
+  ClusterName:
+    Description: EKS Cluster Name
+    Value: !Ref DemoEKSCluster
+
+  ClusterArn:
+    Description: EKS Cluster ARN
+    Value: !GetAtt DemoEKSCluster.Arn
+
+  ClusterEndpoint:
+    Description: EKS Cluster API Endpoint
+    Value: !GetAtt DemoEKSCluster.Endpoint
