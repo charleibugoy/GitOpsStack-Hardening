@@ -89,6 +89,9 @@ Conclusion → Why it matters for ATO → Tool/Technique → Example
 ---
 
 # CLI Installation Steps
+```text
+To automate CLI installs, run cli-prerequisite.sh
+```
 
 ## macOS (Homebrew)
 
@@ -121,29 +124,24 @@ sudo apt install -y curl wget unzip gnupg software-properties-common git jq
 
 ---
 
-### Install AWS CLI
+### Install AWS CLI (Skip, if using CloudShell)
 
 ```bash
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-
 unzip awscliv2.zip
-
 sudo ./aws/install
-
 aws --version
 ```
 
 ---
 
-### Install kubectl
+### Install kubectl 
 
 ```bash
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-
 chmod +x kubectl
-
-sudo mv kubectl /usr/local/bin/
-
+mkdir -p ~/bin
+mv ./kubectl ~/bin/kubectl
 kubectl version --client
 ```
 
@@ -153,28 +151,21 @@ kubectl version --client
 
 ```bash
 curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-
 helm version
 ```
 
 ---
 
-### Install Terraform
+### Install Terraform from AWS CloudShell
 
 ```bash
-wget -O- https://apt.releases.hashicorp.com/gpg | \
-gpg --dearmor | \
-sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg
+git clone https://github.com/tfutils/tfenv.git ~/.tfenv
+mkdir -p ~/bin
+ln -s ~/.tfenv/bin/* ~/bin/
+tfenv install 1.5.7
+tfenv use 1.5.7
 
-echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] \
-https://apt.releases.hashicorp.com $(lsb_release -cs) main" | \
-sudo tee /etc/apt/sources.list.d/hashicorp.list
-
-sudo apt update
-
-sudo apt install terraform -y
-
-terraform version
+terraform --version
 ```
 
 ---
@@ -182,36 +173,29 @@ terraform version
 ### Install ArgoCD CLI
 
 ```bash
-wget https://github.com/argoproj/argo-cd/releases/download/v2.4.11/argocd-linux-amd64
-
-mv argocd-linux-amd64 argocd
-
-chmod +x argocd
-
-sudo mv argocd /usr/local/bin/
-
-argocd version
+curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+chmod +x argocd-linux-amd64
+mkdir -p ~/bin
+mv argocd-linux-amd64 ~/bin/argocd
+argocd version --client
 ```
 
 ---
 
-### Install Ansible
+### Install Ansible and Python3
 
 ```bash
-sudo apt install ansible -y
-
+pip3 install --user ansible
 ansible --version
 ```
 
 ---
 
-### Install Docker
+### Install Docker (Skip, if using CloudShell)
 
 ```bash
 curl -fsSL https://get.docker.com | sh
-
 sudo usermod -aG docker $USER
-
 docker version
 ```
 
@@ -224,7 +208,6 @@ docker version
 ```bash
 curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | \
 sh -s -- -b /usr/local/bin
-
 trivy --version
 ```
 
