@@ -1,19 +1,23 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Create Amazon EKS Cluster (demo-eks) + SSH Key Pair for Node Groups'
-
-Parameters:
-  VpcId:
-    Type: AWS::EC2::VPC::Id
-    Description: VPC ID (Default VPC recommended)
-  PrivateSubnetIds:
-    Type: List<AWS::EC2::Subnet::Id>
-    Description: At least 2 Private Subnet IDs
-  ClusterRoleArn:
-    Type: String
-    Default: "arn:aws:iam::YOUR_ACCOUNT_ID:role/eksClusterRole"
-    Description: ARN of the eksClusterRole
+Description: 'IAM Role for EKS Cluster - eksClusterRole'
 
 Resources:
+  EksClusterRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: eksClusterRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: eks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+      Description: IAM role for Amazon EKS Cluster
+      MaxSessionDuration: 3600
+
   # ==================== SSH Key Pair ====================
   NodeKeyPair:
     Type: AWS::EC2::KeyPair
@@ -25,61 +29,15 @@ Resources:
         - Key: Name
           Value: node-key-pair
 
-  # ==================== EKS Cluster ====================
-  DemoEKSCluster:
-    Type: AWS::EKS::Cluster
-    Properties:
-      Name: demo-eks
-      RoleArn: !Ref ClusterRoleArn
-      Version: "1.31"
-
-      AccessConfig:
-        AuthenticationMode: API_AND_CONFIG_MAP
-        BootstrapClusterCreatorAdminPermissions: true
-
-      # Disable EKS Auto Mode
-      ComputeConfig:
-        Enabled: false
-      StorageConfig:
-        BlockStorage:
-          Enabled: false
-      KubernetesNetworkConfig:
-        ElasticLoadBalancing:
-          Enabled: false
-
-      ResourcesVpcConfig:
-        VpcId: !Ref VpcId
-        SubnetIds: !Ref PrivateSubnetIds
-        EndpointPublicAccess: true
-        EndpointPrivateAccess: true
-
-      Logging:
-        ClusterLogging:
-          - Enabled: true
-            Types:
-              - api
-              - audit
-              - authenticator
-              - controllerManager
-              - scheduler
+  # ==================== Output ====================
 
 Outputs:
-  ClusterName:
-    Description: EKS Cluster Name
-    Value: !Ref DemoEKSCluster
-
-  ClusterArn:
-    Description: EKS Cluster ARN
-    Value: !GetAtt DemoEKSCluster.Arn
-
-  ClusterEndpoint:
-    Description: EKS Cluster Endpoint
-    Value: !GetAtt DemoEKSCluster.Endpoint
-
+  EksClusterRoleArn:
+    Description: ARN of the EKS Cluster IAM Role
+    Value: !GetAtt EksClusterRole.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-EksClusterRoleArn"
+  
   KeyPairName:
     Description: SSH Key Pair Name for Worker Nodes
     Value: !Ref NodeKeyPair
-
-  KeyPairId:
-    Description: Key Pair ID
-    Value: !GetAtt NodeKeyPair.KeyPairId
