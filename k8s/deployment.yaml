@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: hardened-app
-  namespace: test
+  namespace: production
 spec:
   replicas: 2
   selector:
@@ -19,8 +19,17 @@ spec:
         fsGroup: 1000
       containers:
       - name: app
-        image: public.ecr.aws/docker/library/python:3.11-slim   # Replace later with your image
+        # Better public image with full Python
+        image: public.ecr.aws/docker/library/python:3.11-slim-bookworm
         imagePullPolicy: IfNotPresent
+        
+        # Mount the app code (we'll use a ConfigMap or init for now)
+        command: ["gunicorn"]
+        args:
+        - "--workers=2"
+        - "--bind=0.0.0.0:8080"
+        - "app:app"
+        
         ports:
         - containerPort: 8080
         securityContext:
