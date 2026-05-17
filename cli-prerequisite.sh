@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
+#set -euo pipefail
 
 echo "========================================"
 echo " DevOps / Cloud CLI Installation Script "

@@ -3,7 +3,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def hello():
-    return "Hello from hardened container!"
+    return "This is my practice app! "
 
 @app.route('/health')
 def health():

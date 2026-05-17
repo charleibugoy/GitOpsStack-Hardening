@@ -185,7 +185,7 @@ argocd version --client
 ### Install Ansible and Python3
 
 ```bash
-pip3 install --user ansible
+pip3 install ansible
 ansible --version
 ```
 
@@ -206,9 +206,8 @@ docker version
 ### Install Trivy
 
 ```bash
-curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | \
-sh -s -- -b /usr/local/bin
-trivy --version
+mkdir -p ~/bin
+curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b ~/bin
 ```
 
 ---
@@ -522,6 +521,19 @@ kubectl get nodes
 ## 5. Wait for READY State
 
 Ensure all nodes are in `READY` state.
+
+---
+
+---
+
+## 6. Accessing NodePort Service
+
+Modify Security Group for eks-cluster-stack-NodeSecurityGroup
+Edit Inbound Rule -> Add Rule
+  Type: Custom TCP
+  Port Range: 30000-32768
+  Source: My IP (or Anywhere just for labs)
+Save rule
 
 ---
 
