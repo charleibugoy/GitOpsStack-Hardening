@@ -185,7 +185,8 @@ argocd version --client
 ### Install Ansible and Python3
 
 ```bash
-pip3 install ansible
+sudo apt install ansible -y
+
 ansible --version
 ```
 
@@ -206,8 +207,10 @@ docker version
 ### Install Trivy
 
 ```bash
-mkdir -p ~/bin
-curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b ~/bin
+curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | \
+sh -s -- -b /usr/local/bin
+
+trivy --version
 ```
 
 ---
