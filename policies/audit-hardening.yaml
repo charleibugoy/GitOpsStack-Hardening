@@ -1,0 +1,32 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: audit-hardening-baseline
+spec:
+  validationFailureAction: Audit   # Important: Audit = Warn, not block
+  background: true
+  rules:
+  - name: check-non-root
+    match:
+      any:
+      - resources:
+          kinds: ["Pod"]
+    validate:
+      message: "Best practice: Run as non-root (Audit mode)"
+      pattern:
+        spec:
+          securityContext:
+            runAsNonRoot: true
+
+  - name: check-readonly-rootfs
+    match:
+      any:
+      - resources:
+          kinds: ["Pod"]
+    validate:
+      message: "Best practice: Use readOnlyRootFilesystem (Audit mode)"
+      pattern:
+        spec:
+          containers:
+          - securityContext:
+              readOnlyRootFilesystem: true
