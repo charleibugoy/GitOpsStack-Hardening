@@ -13,31 +13,9 @@ spec:
       labels:
         app: nginx-hardened
     spec:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 101
-        fsGroup: 101
       containers:
       - name: nginx
-        image: nginx:alpine          # Very small and stable
+        image: nginx:latest         # Very small and stable
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 80
-        securityContext:
-          allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: true
-          capabilities:
-            drop: ["ALL"]
-        resources:
-          requests:
-            cpu: "50m"
-            memory: "64Mi"
-          limits:
-            cpu: "200m"
-            memory: "128Mi"
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 80
-          initialDelaySeconds: 5
-          periodSeconds: 10
