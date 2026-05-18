@@ -1,10 +1,3 @@
-Here is the fully reorganized `README.md` file, restructuring the contents into a logical, sequential deployment lifecycle.
-
-The structure now moves sequentially from **Conceptual Overview** $\rightarrow$ **Prerequisites & Tooling** $\rightarrow$ **Infrastructure Provisioning** $\rightarrow$ **Core Platform Deployment** $\rightarrow$ **Application Deployment & Hardening** $\rightarrow$ **Advanced Security & Compliance Validation**.
-
-No content, code blocks, tables, or notes have been deleted.
-
----
 
 ```markdown
 # Lab Architecture Overview
@@ -577,7 +570,7 @@ Save rule
 
 ---
 
-# PHASE 2: Core Platform Deployment (GitOps & Observability)
+# PHASE 2: Core Platform Deployment (GitOps, Secrets, & Observability)
 
 ## 7. Install ArgoCD
 
@@ -670,7 +663,66 @@ kubectl get secret argocd-inital-admin-secret \
 
 ---
 
-## 8. Install Prometheus Stack
+## 8. Install External Secrets Operator (for AWS Secrets Manager)
+
+### 1. Add Helm Repo and Install ESO
+
+```bash
+helm repo add external-secrets https://charts.external-secrets.io
+helm repo update
+
+helm install external-secrets \
+  external-secrets/external-secrets \
+  -n external-secrets \
+  --create-namespace
+
+```
+### 2. Create IAM Role for Service Account (IRSA)
+
+Create a file `trust-policy.json`:
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Federated": "arn:aws:iam::${ACCOUNT_ID}:oidc-provider/${OIDC_PROVIDER}"
+            },
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": {
+                "StringEquals": {
+                    "${OIDC_PROVIDER}:sub": "system:serviceaccount:external-secrets:external-secrets"
+                }
+            }
+        }
+    ]
+}
+```
+
+Then run:
+```bash
+# Set environment variables
+export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+export OIDC_PROVIDER=$(aws eks describe-cluster --name demo-eks --query "cluster.identity.oidc.issuer" --output text | sed 's~https://~~')
+
+# Substitute variables and create role
+envsubst < trust-policy.json > filled-trust-policy.json
+aws iam create-role --role-name EKSExternalSecretsRole --assume-role-policy-document file://filled-trust-policy.json
+
+# Attach the policy to allow reading from Secrets Manager
+aws iam attach-role-policy --role-name EKSExternalSecretsRole --policy-arn arn:aws:iam::aws:policy/SecretsManagerReadWrite
+```
+
+### 3. Annotate the Service Account
+```bash
+kubectl annotate serviceaccount external-secrets -n external-secrets \
+  eks.amazonaws.com/role-arn=arn:aws:iam::${ACCOUNT_ID}:role/EKSExternalSecretsRole
+```
+
+---
+
+## 9. Install Prometheus Stack
 
 ### 1. Add Prometheus Helm Repo
 
@@ -797,7 +849,7 @@ kubectl -n monitoring get prometheus.monitoring.coreos.com \
 
 ---
 
-## 9. Setting Up Grafana
+## 10. Setting Up Grafana
 
 ### 1. Change Grafana Service to NodePort
 
@@ -847,7 +899,7 @@ http://NodeIP:<NodePort>
 
 ---
 
-## 10. Deploying Application in ArgoCD
+## 11. Deploying Application in ArgoCD
 
 ### 1. Deploy Base NGINX via UI (Method 1)
 
@@ -874,7 +926,6 @@ argocd app create hardened-app \
   --dest-namespace production
 
 ```
-
 ### 2. Verify NGINX deployment are successful.
 
 ```bash
@@ -888,11 +939,56 @@ Login to NGINX app using http://<nodeip>:<nodeport>
 
 ```
 
-### 3. Add SecurityContext Gradually
+### 3. Implement RBAC for Least Privilege
+By default, pods use the `default` service account, which may have broad permissions. We will create a dedicated Service Account for our app with no API permissions.
+
+#### 3.1 Create RBAC manifests
+Create a file `k8s/nginx/rbac.yaml`:
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nginx-hardened-sa
+  namespace: production
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: nginx-hardened-role
+  namespace: production
+rules: [] # No API permissions needed for a simple NGINX pod
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: nginx-hardened-rb
+  namespace: production
+subjects:
+- kind: ServiceAccount
+  name: nginx-hardened-sa
+roleRef:
+  kind: Role
+  name: nginx-hardened-role
+  apiGroup: rbac.authorization.k8s.io
+```
+
+#### 3.2 Update Deployment to use the Service Account
+Add `serviceAccountName: nginx-hardened-sa` to your `deployment.yaml` under `spec.template.spec`:
+```yaml
+spec:
+      serviceAccountName: nginx-hardened-sa
+      # === Pod Level SecurityContext ===
+      securityContext:
+        runAsNonRoot: true
+...
+```
+Push the new `rbac.yaml` and updated `deployment.yaml` to your Git repository. ArgoCD will sync the changes.
+
+### 4. Add SecurityContext Gradually
 
 We'll add security settings **one layer at a time**.
 
-#### **Phase 2.1: Add Pod-level securityContext**
+#### **Phase 4.1: Add Pod-level securityContext**
 
 Update deployment.yaml:
 
@@ -900,7 +996,8 @@ YAML
 
 ```yaml
 spec:
-      # === Phase 2.1: Pod Level SecurityContext ===
+      serviceAccountName: nginx-hardened-sa
+      # === Pod Level SecurityContext ===
       securityContext:
         runAsNonRoot: true
         runAsUser: 101
@@ -916,7 +1013,7 @@ spec:
 
 **Push** and verify pods still start successfully.
 
-#### **Phase 2.2: Add Container-level securityContext**
+#### **Phase 4.2: Add Container-level securityContext**
 
 Update to this version:
 
@@ -924,6 +1021,7 @@ YAML
 
 ```yaml
 spec:
+      serviceAccountName: nginx-hardened-sa
       securityContext:
         runAsNonRoot: true
         runAsUser: 101
@@ -952,7 +1050,7 @@ spec:
 
 **Push again** and check if pods are still healthy.
 
-### **Step 3: Add a Non-Blocking Kyverno Policy**
+### **Step 5: Add a Non-Blocking Kyverno Policy**
 
 Create a **simple audit-only policy** first (it will **not block** deployments):
 
@@ -1019,7 +1117,7 @@ kubectl get policyreport -A
 
 ### **Action Now:**
 
-1. Update your deployment.yaml with **Phase 2.1** first.
+1. Update your deployment.yaml with **Phase 4.1** first.
 2. Push to Git.
 3. Apply the audit-hardening.yaml policy.
 4. Run:
@@ -1034,7 +1132,7 @@ kubectl get policyreport -A
 
 ---
 
-### **Step 4: Move to Enforcement Mode (Gradually)**
+### **Step 6: Move to Enforcement Mode (Gradually)**
 
 Now that we have a working base, let's switch the Kyverno policy to **Enforce** mode.
 
@@ -1094,7 +1192,7 @@ kubectl apply -f policies/enforce-hardening.yaml
 
 ---
 
-### **Step 5: Add Full SecurityContext to Deployment**
+### **Step 7: Add Full SecurityContext to Deployment**
 
 Now update **k8s/deployment.yaml** to the full hardened version:
 
@@ -1116,6 +1214,7 @@ spec:
       labels:
         app: nginx-hardened
     spec:
+      serviceAccountName: nginx-hardened-sa
       securityContext:
         runAsNonRoot: true
         runAsUser: 101
@@ -1161,7 +1260,7 @@ git push
 
 ---
 
-### **Step 6: Verify Everything**
+### **Step 8: Verify Everything**
 
 Run these commands and check the status:
 
@@ -1184,7 +1283,7 @@ argocd app get nginx-hardened
 
 ---
 
-### **Step 7: Easy Access via Port Forward**
+### **Step 9: Easy Access via Port Forward**
 
 Bash
 
@@ -1479,3 +1578,4 @@ You should see a report showing whether your Kyverno policies are being satisfie
 3. **Kyverno** enforces security at admission time
 4. **Trivy Operator** continuously scans running pods
 5. **Lula** generates compliance evidence
+```
