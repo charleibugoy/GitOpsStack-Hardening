@@ -1013,6 +1013,13 @@ spec:
         # No container-level securityContext yet
 
 ```
+```text
+Why it was breaking
+
+The official nginx:*-alpine image runs the master process as root and worker processes as nginx (101). Forcing everything to 101 can cause nginx to fail when it tries to bind ports, write to /var/cache/nginx, or manage PID files.
+fsGroup: 101 changes ownership of mounted volumes, which can fail or take time if volumes are large or have wrong permissions.
+readOnlyRootFilesystem: true is great for security but often breaks nginx unless you add proper volume mounts.
+```
 
 **Push** and verify pods still start successfully.
 

@@ -14,13 +14,24 @@ spec:
         app: nginx-hardened
     spec:
       serviceAccountName: nginx-hardened-sa
-      securityContext:
+      
+      securityContext:                  # ← Pod-level
         runAsNonRoot: true
-        runAsUser: 101
-        fsGroup: 101
+        runAsUser: 101                  # nginx user in alpine image
+        fsGroup: 101                    # Important for volume permissions
+        fsGroupChangePolicy: OnRootMismatch   # Recommended
+
       containers:
       - name: nginx
-        image: nginx:1.31.0-alpine-slim         # Very small and stable
+        image: nginx:1.31.0-alpine-slim
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 80
+        
+        securityContext:               # ← Container-level (optional but good)
+          runAsNonRoot: true
+          runAsUser: 101
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true     # Try this later
+          capabilities:
+            drop: ["ALL"]
