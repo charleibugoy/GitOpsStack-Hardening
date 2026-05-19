@@ -19,7 +19,7 @@ spec:
         runAsNonRoot: true
         runAsUser: 101
         fsGroup: 101
-        fsGroupChangePolicy: OnRootMismatch
+        #fsGroupChangePolicy: OnRootMismatch
 
       containers:
       - name: nginx
@@ -28,13 +28,13 @@ spec:
         ports:
         - containerPort: 80
 
-        securityContext:
-          runAsNonRoot: true
-          runAsUser: 101
-          allowPrivilegeEscalation: false
+        #securityContext:
+         # runAsNonRoot: true
+          #runAsUser: 101
+          #allowPrivilegeEscalation: false
           #readOnlyRootFilesystem: true          # ← Now safe
-          capabilities:
-            drop: ["ALL"]
+          #capabilities:
+           # drop: ["ALL"]
 
         volumeMounts:
         - name: cache
