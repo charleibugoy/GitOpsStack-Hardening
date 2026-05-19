@@ -32,7 +32,7 @@ spec:
           runAsNonRoot: true
           runAsUser: 101
           allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: true          # ← Now safe
+          #readOnlyRootFilesystem: true          # ← Now safe
           capabilities:
             drop: ["ALL"]
 
