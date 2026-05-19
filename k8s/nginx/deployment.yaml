@@ -14,9 +14,10 @@ spec:
         app: nginx-hardened
     spec:
       serviceAccountName: nginx-hardened-sa
-      # === Pod Level SecurityContext ===
       securityContext:
         runAsNonRoot: true
+        runAsUser: 101
+        fsGroup: 101
       containers:
       - name: nginx
         image: nginx:1.31.0-alpine-slim         # Very small and stable
