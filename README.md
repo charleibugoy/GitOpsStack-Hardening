@@ -152,8 +152,9 @@ kubectl version --client
 ### Install Helm
 
 ```bash
-curl [https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3](https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3) | bash
-helm version
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+chmod 700 get_helm.sh
+./get_helm.sh
 
 ```
 
@@ -523,7 +524,7 @@ Take note of `NodeInstanceRole` from the **Outputs** tab.
 #### 1. Download Node ConfigMap
 
 ```bash
-curl -O [https://s3.us-west-2.amazonaws.com/amazon-eks/cloudformation/2020-10-29/aws-auth-cm.yaml](https://s3.us-west-2.amazonaws.com/amazon-eks/cloudformation/2020-10-29/aws-auth-cm.yaml)
+curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/cloudformation/2020-10-29/aws-auth-cm.yaml
 
 ```
 
@@ -579,8 +580,7 @@ Save rule
 ```bash
 kubectl create namespace argocd
 
-kubectl apply -n argocd \
-  -f [https://raw.githubusercontent.com/argoproj/argo-cd/V2.4.11/manifests/install.yaml](https://raw.githubusercontent.com/argoproj/argo-cd/V2.4.11/manifests/install.yaml)
+kubectl kubectl apply -n argocd --server-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
 ```
 
@@ -636,7 +636,7 @@ kubectl get secret -n argocd
 #### Output Secret JSON
 
 ```bash
-kubectl get secret argocd-inital-admin-secret \
+kubectl get secret argocd-initial-admin-secret \
   -n argocd \
   -o json
 
@@ -647,7 +647,7 @@ kubectl get secret argocd-inital-admin-secret \
 #### Decode Password
 
 ```bash
-kubectl get secret argocd-inital-admin-secret \
+kubectl get secret argocd-initial-admin-secret \
   -n argocd \
   -o json | jq .data.password -r | base64 -d
 
@@ -707,7 +707,10 @@ export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 export OIDC_PROVIDER=$(aws eks describe-cluster --name demo-eks --query "cluster.identity.oidc.issuer" --output text | sed 's~https://~~')
 
 # Substitute variables and create role
-envsubst < trust-policy.json > filled-trust-policy.json
+sed \
+  -e "s|\${ACCOUNT_ID}|${ACCOUNT_ID}|g" \
+  -e "s|\${OIDC_PROVIDER}|${OIDC_PROVIDER}|g" \
+  trust-policy.json > filled-trust-policy.json
 aws iam create-role --role-name EKSExternalSecretsRole --assume-role-policy-document file://filled-trust-policy.json
 
 # Attach the policy to allow reading from Secrets Manager

@@ -17,10 +17,23 @@ sudo chmod -R 755 /bin 2>/dev/null || true
 # 1. kubectl
 # ============================
 echo "=== Installing kubectl ==="
-KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt)
-curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+curl -LO "https://k8s.io(curl -L -s https://k8s.io)/bin/linux/amd64/kubectl"
+
+# 2. Make the binary executable
 chmod +x kubectl
-sudo mv kubectl /bin/
+
+# 3. Move it to your persistent local directory
+mkdir -p ~/.local/bin
+mv kubectl ~/.local/bin/
+
+# 4. Ensure ~/.local/bin is in your PATH
+if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+    export PATH="$HOME/.local/bin:$PATH"
+fi
+
+# 5. Reload your shell and verify
+source ~/.bashrc
 echo "kubectl: $(kubectl version --client --short 2>/dev/null || echo 'installed')"
 
 # ============================
@@ -34,18 +47,31 @@ echo "Helm: $(helm version --short 2>/dev/null || echo 'installed')"
 # 3. ArgoCD CLI
 # ============================
 echo "=== Installing ArgoCD CLI ==="
-ARGOCD_VERSION=$(curl -s https://api.github.com/repos/argoproj/argo-cd/releases/latest | grep '"tag_name"' | cut -d'"' -f4)
-curl -LO "https://github.com/argoproj/argo-cd/releases/download/${ARGOCD_VERSION}/argocd-linux-amd64"
-chmod +x argocd-linux-amd64
-sudo mv argocd-linux-amd64 /bin/argocd
+curl -sSL -o /tmp/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+
+# Move binary to the local user directory (doesn't require root/sudo)
+mkdir -p ~/.local/bin
+mv /tmp/argocd ~/.local/bin/argocd
+
+# Make it executable
+chmod +x ~/.local/bin/argocd
+
+# Ensure ~/.local/bin is in your PATH
+if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+    export PATH="$HOME/.local/bin:$PATH"
+    echo "Added ~/.local/bin to your PATH in ~/.bashrc"
+fi
+
+echo "Verifying installation..."
 echo "ArgoCD: $(argocd version --client --short 2>/dev/null || echo 'installed')"
 
 # ============================
 # 4. Ansible
 # ============================
 echo "=== Installing Ansible ==="
-sudo yum install -y ansible
-echo "Ansible: $(ansible --version | head -n 1)"
+pip3 install ansible
+echpip3 install ansibleo "Ansible: $(ansible --version | head -n 1)"
 
 # ============================
 # 5. Trivy
