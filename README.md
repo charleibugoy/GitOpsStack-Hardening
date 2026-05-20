@@ -2,7 +2,6 @@
 ```markdown
 # Lab Architecture Overview
 
-```text
 Terraform  → Provision VPC + EKS Cluster
 Ansible    → Post-provision config + Kyverno policies
 Helm       → Package deployments (ArgoCD, Kyverno, Prometheus, etc.)
@@ -127,7 +126,7 @@ sudo apt install -y curl wget unzip gnupg software-properties-common git jq
 ### Install AWS CLI (Skip, if using CloudShell)
 
 ```bash
-curl "[https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip](https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip)" -o "awscliv2.zip"
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 unzip awscliv2.zip
 sudo ./aws/install
 aws --version
@@ -139,7 +138,7 @@ aws --version
 ### Install kubectl
 
 ```bash
-curl -LO "[https://dl.k8s.io/release/$](https://dl.k8s.io/release/$)(curl -L -s [https://dl.k8s.io/release/stable.txt](https://dl.k8s.io/release/stable.txt))/bin/linux/amd64/kubectl"
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 chmod +x kubectl
 mkdir -p ~/bin
 mv ./kubectl ~/bin/kubectl
@@ -163,7 +162,7 @@ chmod 700 get_helm.sh
 ### Install Terraform from AWS CloudShell
 
 ```bash
-git clone [https://github.com/tfutils/tfenv.git](https://github.com/tfutils/tfenv.git) ~/.tfenv
+git clone https://github.com/tfutils/tfenv.git ~/.tfenv
 mkdir -p ~/bin
 ln -s ~/.tfenv/bin/* ~/bin/
 tfenv install 1.5.7
@@ -178,7 +177,7 @@ terraform --version
 ### Install ArgoCD CLI
 
 ```bash
-curl -sSL -o argocd-linux-amd64 [https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64](https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64)
+curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
 chmod +x argocd-linux-amd64
 mkdir -p ~/bin
 mv argocd-linux-amd64 ~/bin/argocd
@@ -202,7 +201,7 @@ ansible --version
 ### Install Docker (Skip, if using CloudShell)
 
 ```bash
-curl -fsSL [https://get.docker.com](https://get.docker.com) | sh
+curl -fsSL https://get.docker.com | sh
 sudo usermod -aG docker $USER
 docker version
 
@@ -215,59 +214,10 @@ docker version
 ### Install Trivy
 
 ```bash
-curl -sfL [https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh](https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh) | \
+curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | \
 sh -s -- -b /usr/local/bin
 
 trivy --version
-
-```
-
----
-
-## Windows
-
-### Install Chocolatey
-
-Open PowerShell as Administrator:
-
-```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force; `
-[System.Net.ServicePointManager]::SecurityProtocol = `
-[System.Net.ServicePointManager]::SecurityProtocol -bor 3072; `
-iex ((New-Object System.Net.WebClient).DownloadString('[https://community.chocolatey.org/install.ps1](https://community.chocolatey.org/install.ps1)'))
-
-```
-
----
-
-### Install Required CLIs
-
-```powershell
-choco install -y awscli kubernetes-cli kubernetes-helm terraform git jq
-
-```
-
----
-
-### Install ArgoCD CLI
-
-```powershell
-choco install argocd-cli -y
-
-```
-
----
-
-### Install Docker Desktop
-
-Install:
-
-* Docker Desktop for Windows
-
-Verify:
-
-```powershell
-docker version
 
 ```
 
@@ -354,7 +304,7 @@ aws ec2 describe-subnets \
 1. Clone Repository
 
 ```bash
-git clone [https://github.com/kodekloudhub/amazon-elastic-kubernetes-service-course](https://github.com/kodekloudhub/amazon-elastic-kubernetes-service-course)
+git clone https://github.com/kodekloudhub/amazon-elastic-kubernetes-service-course
 
 ```
 
@@ -493,7 +443,7 @@ chmod 400 node-key-pair.pem
 Use S3 URL:
 
 ```text
-[https://s3.us-west-2.amazonaws.com/amazon-eks/cloudformation/2022-12-23/amazon-eks-nodegroup.yaml](https://s3.us-west-2.amazonaws.com/amazon-eks/cloudformation/2022-12-23/amazon-eks-nodegroup.yaml)
+https://s3.us-west-2.amazonaws.com/amazon-eks/cloudformation/2022-12-23/amazon-eks-nodegroup.yaml
 
 ```
 
@@ -731,7 +681,7 @@ kubectl annotate serviceaccount external-secrets -n external-secrets \
 
 ```bash
 helm repo add prometheus-community \
-  [https://prometheus-community.github.io/helm-charts](https://prometheus-community.github.io/helm-charts)
+  https://prometheus-community.github.io/helm-charts
 
 helm repo update
 
@@ -781,7 +731,7 @@ Use <NodePort IP>:<NodePort>.
 ### 5. Configure ServiceMonitor for ArgoCD
 
 ```yaml
-apiVersion: [monitoring.coreos.com/v1](https://monitoring.coreos.com/v1)
+apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: argocd-metrics
@@ -794,7 +744,7 @@ spec:
   endpoints:
     - port: metrics
 ---
-apiVersion: [monitoring.coreos.com/v1](https://monitoring.coreos.com/v1)
+apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: argocd-server-metrics
@@ -807,7 +757,7 @@ spec:
   endpoints:
     - port: metrics
 ---
-apiVersion: [monitoring.coreos.com/v1](https://monitoring.coreos.com/v1)
+apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: argocd-repo-server-metrics
@@ -923,7 +873,7 @@ http://NodeIP:<NodePort>
 
 ```bash
 argocd app create hardened-app \
-  --repo [https://github.com/charleibugoy/GitOpsStack-Hardening.git](https://github.com/charleibugoy/GitOpsStack-Hardening.git) \
+  --repo https://github.com/charleibugoy/GitOpsStack-Hardening.git \
   --path k8s/nginx \
   --dest-server [https://kubernetes.default.svc](https://kubernetes.default.svc) \
   --dest-namespace production
@@ -1019,6 +969,15 @@ Why it was breaking
 The official nginx:*-alpine image runs the master process as root and worker processes as nginx (101). Forcing everything to 101 can cause nginx to fail when it tries to bind ports, write to /var/cache/nginx, or manage PID files.
 fsGroup: 101 changes ownership of mounted volumes, which can fail or take time if volumes are large or have wrong permissions.
 readOnlyRootFilesystem: true is great for security but often breaks nginx unless you add proper volume mounts.
+
+Because nginx pod is set readOnlyRootFilesystem: true.
+Nginx (by default) tries to create/write to these directories at startup:
+
+/var/cache/nginx/
+/var/run/
+/tmp/
+
+With a read-only root filesystem, it fails.
 ```
 
 **Push** and verify pods still start successfully.
@@ -1318,7 +1277,7 @@ Bash
 
 ```bash
 # Add Helm repo
-helm repo add aqua [https://aquasecurity.github.io/helm-charts/](https://aquasecurity.github.io/helm-charts/)
+helm repo add aqua https://aquasecurity.github.io/helm-charts/
 helm repo update
 
 # Install Trivy Operator
@@ -1363,7 +1322,7 @@ Bash
 
 ```bash
 # 1. Install Trivy Operator
-helm repo add aqua [https://aquasecurity.github.io/helm-charts/](https://aquasecurity.github.io/helm-charts/)
+helm repo add aqua https://aquasecurity.github.io/helm-charts/
 helm repo update
 
 helm install trivy-operator aqua/trivy-operator \
@@ -1379,7 +1338,7 @@ Bash
 
 ```bash
 # 2. Install Policy Reporter (for beautiful dashboards)
-helm repo add policy-reporter [https://kyverno.github.io/policy-reporter](https://kyverno.github.io/policy-reporter)
+helm repo add policy-reporter https://kyverno.github.io/policy-reporter
 helm repo update
 
 helm install policy-reporter policy-reporter/policy-reporter \
