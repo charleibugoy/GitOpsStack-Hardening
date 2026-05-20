@@ -4,7 +4,7 @@ metadata:
   name: block-high-critical-vulnerabilities
 spec:
   validationFailureAction: Enforce
-  background: true
+  background: false # Must be false because background scans don't have request.operation context
   rules:
   - name: block-critical-vulns
     match:
@@ -17,15 +17,22 @@ spec:
         operator: In
         value: ["CREATE", "UPDATE"]
     validate:
-      message: "Image {{element.image}} has HIGH or CRITICAL vulnerabilities and is blocked (DoD Policy)"
+      message: "Image {{element.image}} is blocked due to DoD Vulnerability Policy thresholds."
       foreach:
       - list: "request.object.spec.containers"
+        # 1. Fetch the Trivy VulnerabilityReport for this specific image
+        context:
+        - name: imageVulnerabilities
+          apiCall:
+            urlPath: /apis/aquasecurity.github.io/v1alpha1/namespaces/{{request.namespace}}/vulnerabilityreports
+            jmesPath: "items[?status.artifact.repository=='{{element.image}}'].status.summary | [0]"
+        # 2. Evaluate the conditions against the fetched Trivy data
         deny:
           conditions:
-            all:
-            - key: "{{ vulnerabilities.critical | default(0) }}"
+            any: # Changed to ANY so violating either threshold blocks the container
+            - key: "{{ imageVulnerabilities.critical || `0` }}"
               operator: GreaterThan
               value: 0
-            - key: "{{ vulnerabilities.high | default(0) }}"
+            - key: "{{ imageVulnerabilities.high || `0` }}"
               operator: GreaterThan
-              value: 5   # Allow max 5 HIGH, block more
+              value: 5 # Allows max 5 HIGH, blocks on 6 or more
