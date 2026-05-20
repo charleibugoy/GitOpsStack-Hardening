@@ -1,0 +1,49 @@
+apiVersion: oscal.mitre.org/v1alpha1
+kind: ComponentDefinition
+metadata:
+  name: nginx-hardened-component
+spec:
+  title: "Hardened Nginx Application - Defense Unicorns Lab"
+  description: "Sample application with Kyverno enforcement"
+  components:
+    - uuid: "e04b7b30-2223-4b6d-a7b2-123456789abc"
+      name: nginx-deployment
+      type: software # Standard OSCAL category type
+      description: "Nginx deployment protected by Kyverno"
+      control-implementations:
+        - uuid: "9b1deb4d-3b7d-4bad-9bdd-abcdef123456"
+          source: "NIST-800-53"
+          description: "Container Security Controls"
+          implemented-requirements:
+            
+            # --- Control 1: CM-7 ---
+            - uuid: "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d"
+              control-id: "cm-7" # Lowercase for catalog matching
+              description: "Least Functionality - Non-root + ReadOnly FS"
+              remarks:
+                lula:
+                  domain: kubernetes
+                  provider:
+                    type: oopa
+                    manifest: |
+                      validate:
+                        - name: check-kyverno-hardening-active
+                          resource: clusterpolicy/block-high-critical-vulnerabilities
+                          field: spec.validationFailureAction
+                          value: Enforce
+
+            # --- Control 2: SC-7 ---
+            - uuid: "f1e2d3c4-b5a6-9f8e-7d6c-5b4a3f2e1d0c"
+              control-id: "sc-7"
+              description: "Boundary Protection"
+              remarks:
+                lula:
+                  domain: kubernetes
+                  provider:
+                    type: oopa
+                    manifest: |
+                      validate:
+                        - name: check-production-namespace-status
+                          resource: namespaces/production
+                          field: status.phase
+                          value: Active
