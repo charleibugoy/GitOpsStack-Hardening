@@ -13,41 +13,9 @@ spec:
       labels:
         app: nginx-hardened
     spec:
-      serviceAccountName: nginx-hardened-sa
-      
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 101
-        fsGroup: 101
-        #fsGroupChangePolicy: OnRootMismatch
-
       containers:
       - name: nginx
-        image: nginx:1.31.0-alpine-slim
+        image: nginx:1.31.0-alpine-slim         # Very small and stable
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 80
-
-        #securityContext:
-         # runAsNonRoot: true
-          #runAsUser: 101
-          #allowPrivilegeEscalation: false
-          #readOnlyRootFilesystem: true          # ← Now safe
-          #capabilities:
-           # drop: ["ALL"]
-
-        volumeMounts:
-        - name: cache
-          mountPath: /var/cache/nginx
-        - name: tmp
-          mountPath: /tmp
-        - name: run
-          mountPath: /var/run
-
-      volumes:
-      - name: cache
-        emptyDir: {}
-      - name: tmp
-        emptyDir: {}
-      - name: run
-        emptyDir: {}

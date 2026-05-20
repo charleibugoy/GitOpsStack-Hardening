@@ -89,26 +89,6 @@ To automate CLI installs, run cli-prerequisite.sh
 
 ```
 
-## macOS (Homebrew)
-
-```bash
-brew install terraform kubectl helm awscli argocd ansible git jq
-
-```
-
-### Docker Desktop
-
-Install:
-
-* Docker Desktop for macOS
-
-Start Docker and verify:
-
-```bash
-docker version
-
-```
-
 ---
 
 ## Ubuntu / Debian Linux
@@ -214,9 +194,9 @@ docker version
 ### Install Trivy
 
 ```bash
+mkdir -p ~/.local/bin
 curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | \
-sh -s -- -b /usr/local/bin
-
+sh -s -- -b ~/.local/bin
 trivy --version
 
 ```
@@ -256,11 +236,10 @@ jq --version
 ```bash
 aws cloudformation create-stack \
   --stack-name eks-cluster-role \
-  --template-body file://eks-cluster-role.yaml \
+  --template-body file://1.eks-cluster-role.yaml \
   --capabilities CAPABILITY_NAMED_IAM
 
 ```
-
 ---
 
 ## 1.5 Finding VPC and Subnet
@@ -304,6 +283,7 @@ aws ec2 describe-subnets \
 1. Clone Repository
 
 ```bash
+
 git clone https://github.com/kodekloudhub/amazon-elastic-kubernetes-service-course
 
 ```
@@ -530,7 +510,7 @@ Save rule
 ```bash
 kubectl create namespace argocd
 
-kubectl kubectl apply -n argocd --server-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl apply -n argocd --server-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
 ```
 
@@ -875,7 +855,7 @@ http://NodeIP:<NodePort>
 argocd app create hardened-app \
   --repo https://github.com/charleibugoy/GitOpsStack-Hardening.git \
   --path k8s/nginx \
-  --dest-server [https://kubernetes.default.svc](https://kubernetes.default.svc) \
+  --dest-server https://kubernetes.default.svc \
   --dest-namespace production
 
 ```
