@@ -1,13 +1,4 @@
-Here is your complete, reorganized, and fixed `README.md` file.
-
-### What Was Fixed:
-
-1. **Resolved Strict Decoding Error:** In Phase 4 (Part 2, Step 2), the Kyverno policy `block-high-critical-vulnerabilities` contained a syntax issue in its `foreach` loops where the field `elementProcessedWithMessage` or `message` was improperly structured for a native `deny` block. The JMESPath and validation patterns have been streamlined to natively query the Trivy Operator's `vulnerabilityreports` custom resource safely without breaking strict YAML decoding schema validators.
-2. **Structural Flow:** Maintained every single word, command, script, architectural note, markdown table, and troubleshooting snippet while tightening headers and code block transitions for crisp scannability.
-
----
-
-```markdown
+```text
 # Lab Architecture Overview
 
 Terraform  → Provision VPC + EKS Cluster
@@ -90,6 +81,7 @@ Conclusion → Why it matters for ATO → Tool/Technique → Example
 To automate CLI installs, run cli-prerequisite.sh
 
 ---
+```
 
 ## Ubuntu / Debian Linux
 
