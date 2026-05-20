@@ -43,10 +43,7 @@ Prometheus + Grafana → Observability
 
 # Interview BLUF Formula
 
-```text
 Conclusion → Why it matters for ATO → Tool/Technique → Example
-
-```
 
 ---
 
