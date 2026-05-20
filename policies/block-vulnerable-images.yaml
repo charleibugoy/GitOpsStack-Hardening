@@ -11,17 +11,16 @@ spec:
       any:
       - resources:
           kinds: ["Pod"]
-    # ─── ADD THIS BLOCK TO EXPLICITLY PERMIT STATUS MATCHING ───
-    exclude:
-      any:
-      - resources:
-          subresources: ["status"]
-    # ───────────────────────────────────────────────────────────
     preconditions:
       all:
+      # 1. Keeps your lifecycle targets intact
       - key: "{{request.operation}}"
         operator: In
         value: ["CREATE", "UPDATE"]
+      # 2. THE FIX: Ensures Kyverno ignores requests targeting the status subresource
+      - key: "{{request.subResource || ''}}"
+        operator: NotEquals
+        value: "status"
     validate:
       message: "Admission blocked by DoD Policy. One or more images exceed vulnerability thresholds: {{ request.object.spec.containers[*].image }}"
       foreach:
