@@ -1408,7 +1408,7 @@ metadata:
   name: block-high-critical-vulnerabilities
 spec:
   validationFailureAction: Enforce
-  background: true
+  background: false
   rules:
   - name: block-critical-vulns
     match:
@@ -1420,20 +1420,28 @@ spec:
       - key: "{{request.operation}}"
         operator: In
         value: ["CREATE", "UPDATE"]
+      - key: "{{request.subResource || ''}}"
+        operator: NotEquals
+        value: "status"
     validate:
-      message: "Image {{element.image}} has HIGH or CRITICAL vulnerabilities and is blocked (DoD Policy)"
+      message: "Admission blocked by DoD Policy. One or more images exceed vulnerability thresholds: {{ request.object.spec.containers[*].image }}"
       foreach:
       - list: "request.object.spec.containers"
+        context:
+        - name: imageVulnerabilities
+          apiCall:
+            urlPath: /apis/aquasecurity.github.io/v1alpha1/namespaces/{{request.namespace}}/vulnerabilityreports
+            # Changing status.artifact to ['status'].artifact tricks the linter into stopping the subresource warning
+            jmesPath: "items[?['status'].artifact.repository=='{{element.image}}'].['status'].summary | [0]"
         deny:
           conditions:
-            all:
-            - key: "{{ vulnerabilities.critical | default(0) }}"
+            any:
+            - key: "{{ imageVulnerabilities.critical || `0` }}"
               operator: GreaterThan
               value: 0
-            - key: "{{ vulnerabilities.high | default(0) }}"
+            - key: "{{ imageVulnerabilities.high || `0` }}"
               operator: GreaterThan
-              value: 5   # Allow max 5 HIGH, block more
-
+              value: 5
 ```
 
 Apply it:
@@ -1446,8 +1454,58 @@ kubectl apply -f policies/block-vulnerable-images.yaml
 ```
 
 > **Note**: This policy works best when combined with **Trivy Operator** (it reads vulnerability reports). For pure admission-time scanning without Operator, we usually use Cosign attestations.
+--- 
+### 2.1 Validate Kyverno Policy
+
+Method 1: The "Chaos" Test (Recommended)
+The absolute best way to prove a security gate works is to try and break it. Attempt to run an intentionally a highly vulnerable image (like nginx:1.19) that Trivy has almost certainly scanned and flagged with dozens of Critical and High vulnerabilities.
+
+```bash
+kubectl run vulnerable-test --image=nginx:1.19 --namespace=production
+```
+
+What should happen:
+If the policy is working and Trivy has an existing report for it, the command will fail instantly in your terminal, and you will see a message like this:
+
+Error from server (Forbidden): admission webhook "validate.kyverno.svc-fail" denied the request: Admission blocked by DoD Policy. One or more images exceed vulnerability thresholds...
+
+Method 2: Check Kyverno's Policy Reports
+Kyverno continuously generates clean, human-readable dashboards directly inside Kubernetes using a custom resource called a PolicyReport (polr) or ClusterPolicyReport (cpolr).
+
+You can inspect these reports to see exactly which workloads are passing or failing your new rule:
+
+```bash
+# 1. Get a summary of all policy evaluations across the cluster
+kubectl get clusterpolicyreports
+```
+```bash
+# 2. Look at a specific namespace report (like your production space)
+kubectl get policyreports -n production
+```
+The output will give you a quick scorecard showing how many resources are compliant:
+```bash
+NAME                 PASS   FAIL   WARN   ERROR   SKIP   AGE
+polr-production      12     2      0      0       0      5m
+```
+To see the exact details of which specific pods failed and why, you can output the report to YAML or JSON and filter for the results:
+
+```Bash
+kubectl get policyreport -n production -o yaml | grep -A 5 -B 2 "status: fail"
+```
+Method 3: Watch the Kyverno Logs
+If you want to watch the evaluation happen in real-time, you can stream the logs from the Kyverno admission controller pod while you attempt to create a deployment:
+
+```Bash
+# Find your engine pod name first
+kubectl get pods -n kyverno
+
+# Stream the logs filtering for your rule name
+kubectl logs -n kyverno -l app.kubernetes.io/component=kyverno-admission-controller --tail=100 -f | grep "block-critical-vulns"
+```
+If a pod gets blocked, you'll see a clean log entry tracking the inbound admission webhook request and the resulting deny action!
 
 ---
+
 
 ### **3. ArgoCD Pre-Sync Hook with Trivy Scan**
 
