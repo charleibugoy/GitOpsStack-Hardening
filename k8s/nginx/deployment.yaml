@@ -16,24 +16,23 @@ spec:
       serviceAccountName: nginx-hardened-sa
       securityContext:
         runAsNonRoot: true
-        # Setting the explicit UID tells K8s exactly who is running it
-        runAsUser: 101 
+        runAsUser: 101
         runAsGroup: 101
         fsGroup: 101
 
       containers:
       - name: nginx
-        # Changed to the official unprivileged variant
         image: nginxinc/nginx-unprivileged:1.27-alpine-slim
         imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 8080 # Unprivileged images use 8080 by default
-
+        - containerPort: 8080 # High port required for non-root / dropped capabilities
+        
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
           capabilities:
             drop: ["ALL"]
+            
         resources:
           requests:
             cpu: "100m"
@@ -41,3 +40,21 @@ spec:
           limits:
             cpu: "300m"
             memory: "256Mi"
+
+        # Mount the ephemeral scratch spaces into the container
+        volumeMounts:
+        - name: tmp-volume
+          mountPath: /tmp
+        - name: run-volume
+          mountPath: /var/run
+        - name: cache-volume
+          mountPath: /var/cache/nginx
+
+      # Define the temporary memory-backed storage spaces
+      volumes:
+      - name: tmp-volume
+        emptyDir: {}
+      - name: run-volume
+        emptyDir: {}
+      - name: cache-volume
+        emptyDir: {}
