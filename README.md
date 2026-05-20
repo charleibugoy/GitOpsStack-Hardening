@@ -87,10 +87,7 @@ Conclusion → Why it matters for ATO → Tool/Technique → Example
 
 # CLI Installation Steps
 
-```text
 To automate CLI installs, run cli-prerequisite.sh
-
-```
 
 ---
 
@@ -109,7 +106,7 @@ sudo apt install -y curl wget unzip gnupg software-properties-common git jq
 ### Install AWS CLI (Skip, if using CloudShell)
 
 ```bash
-curl "[https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip](https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip)" -o "awscliv2.zip"
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 unzip awscliv2.zip
 sudo ./aws/install
 aws --version
@@ -121,7 +118,7 @@ aws --version
 ### Install kubectl
 
 ```bash
-curl -LO "[https://dl.k8s.io/release/$](https://dl.k8s.io/release/$)(curl -L -s [https://dl.k8s.io/release/stable.txt](https://dl.k8s.io/release/stable.txt))/bin/linux/amd64/kubectl"
+curl -LO "https://dl.k8s.io/release/$ (curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 chmod +x kubectl
 mkdir -p ~/bin
 mv ./kubectl ~/bin/kubectl
@@ -134,7 +131,7 @@ kubectl version --client
 ### Install Helm
 
 ```bash
-curl -fsSL -o get_helm.sh [https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3](https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3)
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
 chmod 700 get_helm.sh
 ./get_helm.sh
 
@@ -145,7 +142,7 @@ chmod 700 get_helm.sh
 ### Install Terraform from AWS CloudShell
 
 ```bash
-git clone [https://github.com/tfutils/tfenv.git](https://github.com/tfutils/tfenv.git) ~/.tfenv
+git clone https://github.com/tfutils/tfenv.git ~/.tfenv
 mkdir -p ~/bin
 ln -s ~/.tfenv/bin/* ~/bin/
 tfenv install 1.5.7
@@ -160,7 +157,7 @@ terraform --version
 ### Install ArgoCD CLI
 
 ```bash
-curl -sSL -o argocd-linux-amd64 [https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64](https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64)
+curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
 chmod +x argocd-linux-amd64
 mkdir -p ~/bin
 mv argocd-linux-amd64 ~/bin/argocd
@@ -184,7 +181,7 @@ ansible --version
 
 ```bash
 mkdir -p ~/.local/bin
-curl -sfL [https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh](https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh) | \
+curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | \
 sh -s -- -b ~/.local/bin
 trivy --version
 
@@ -193,7 +190,7 @@ trivy --version
 ### Install Lula
 
 ```bash
-curl -L -o lula [https://github.com/defenseunicorns/lula/releases/download/v0.11.0/lula_v0.11.0_Linux_amd64](https://github.com/defenseunicorns/lula/releases/download/v0.11.0/lula_v0.11.0_Linux_amd64)
+curl -L -o lula https://github.com/defenseunicorns/lula/releases/download/v0.11.0/lula_v0.11.0_Linux_amd64
 chmod +x lula
 sudo mv lula /usr/local/bin/
 
@@ -445,7 +442,7 @@ Take note of `NodeInstanceRole` from the **Outputs** tab.
 #### 1. Download Node ConfigMap
 
 ```bash
-curl -O [https://s3.us-west-2.amazonaws.com/amazon-eks/cloudformation/2020-10-29/aws-auth-cm.yaml](https://s3.us-west-2.amazonaws.com/amazon-eks/cloudformation/2020-10-29/aws-auth-cm.yaml)
+curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/cloudformation/2020-10-29/aws-auth-cm.yaml
 
 ```
 
@@ -501,7 +498,7 @@ Save rule
 ```bash
 kubectl create namespace argocd
 
-kubectl apply -n argocd --server-side --force-conflicts -f [https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml](https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml)
+kubectl apply -n argocd --server-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
 ```
 
@@ -589,7 +586,7 @@ kubectl get secret argocd-initial-admin-secret \
 ### 1. Add Helm Repo and Install ESO
 
 ```bash
-helm repo add external-secrets [https://charts.external-secrets.io](https://charts.external-secrets.io)
+helm repo add external-secrets https://charts.external-secrets.io
 helm repo update
 
 helm install external-secrets \
@@ -659,7 +656,7 @@ kubectl annotate serviceaccount external-secrets -n external-secrets \
 
 ```bash
 helm repo add prometheus-community \
-  [https://prometheus-community.github.io/helm-charts](https://prometheus-community.github.io/helm-charts)
+ https://prometheus-community.github.io/helm-charts
 
 helm repo update
 
@@ -709,7 +706,7 @@ Use <NodePort IP>:<NodePort>.
 ### 5. Configure ServiceMonitor for ArgoCD
 
 ```yaml
-apiVersion: [monitoring.coreos.com/v1](https://monitoring.coreos.com/v1)
+apiVersion: https://monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: argocd-metrics
@@ -722,7 +719,7 @@ spec:
   endpoints:
     - port: metrics
 ---
-apiVersion: [monitoring.coreos.com/v1](https://monitoring.coreos.com/v1)
+apiVersion: https://monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: argocd-server-metrics
@@ -735,7 +732,7 @@ spec:
   endpoints:
     - port: metrics
 ---
-apiVersion: [monitoring.coreos.com/v1](https://monitoring.coreos.com/v1)
+apiVersion: https://monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: argocd-repo-server-metrics
@@ -851,9 +848,9 @@ http://NodeIP:<NodePort>
 
 ```bash
 argocd app create hardened-app \
-  --repo [https://github.com/charleibugoy/GitOpsStack-Hardening.git](https://github.com/charleibugoy/GitOpsStack-Hardening.git) \
+  --repo https://github.com/charleibugoy/GitOpsStack-Hardening.git \
   --path k8s/nginx \
-  --dest-server [https://kubernetes.default.svc](https://kubernetes.default.svc) \
+  --dest-server https://kubernetes.default.svc \
   --dest-namespace production
 
 ```
@@ -1107,7 +1104,7 @@ Now that we have a working base, let's switch the Kyverno policy to **Enforce** 
 ### Installing Kyverno (Requires Helm)
 
 ```bash
-helm repo add kyverno [https://kyverno.github.io/kyverno/](https://kyverno.github.io/kyverno/)
+helm repo add kyverno https://kyverno.github.io/kyverno/
 helm repo update
 helm install kyverno kyverno/kyverno --namespace kyverno --create-namespace
 
@@ -1358,7 +1355,7 @@ trivy k8s --report summary deployment/nginx-hardened -n production
 
 ```bash
 # 2. Install Policy Reporter (for beautiful dashboards)
-helm repo add policy-reporter [https://kyverno.github.io/policy-reporter](https://kyverno.github.io/policy-reporter)
+helm repo add policy-reporter https://kyverno.github.io/policy-reporter
 helm repo update
 
 helm install policy-reporter policy-reporter/policy-reporter \
