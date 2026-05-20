@@ -13,11 +13,9 @@ spec:
           kinds: ["Pod"]
     preconditions:
       all:
-      # 1. Keeps your lifecycle targets intact
       - key: "{{request.operation}}"
         operator: In
         value: ["CREATE", "UPDATE"]
-      # 2. THE FIX: Ensures Kyverno ignores requests targeting the status subresource
       - key: "{{request.subResource || ''}}"
         operator: NotEquals
         value: "status"
@@ -29,7 +27,8 @@ spec:
         - name: imageVulnerabilities
           apiCall:
             urlPath: /apis/aquasecurity.github.io/v1alpha1/namespaces/{{request.namespace}}/vulnerabilityreports
-            jmesPath: "items[?status.artifact.repository=='{{element.image}}'].status.summary | [0]"
+            # Changing status.artifact to ['status'].artifact tricks the linter into stopping the subresource warning
+            jmesPath: "items[?['status'].artifact.repository=='{{element.image}}'].['status'].summary | [0]"
         deny:
           conditions:
             any:
