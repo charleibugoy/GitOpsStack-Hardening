@@ -17,21 +17,22 @@ spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: 101
-        runAsGroup: 101 # Added group consistency
+        runAsGroup: 101
         fsGroup: 101
 
       containers:
       - name: nginx
-        # 1. Switched back to the unprivileged image to handle non-root seamlessly
         image: nginxinc/nginx-unprivileged:1.27-alpine-slim
         imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 8080 # 2. Shifted to unprivileged port
+        - containerPort: 8080 # High port required for non-root / dropped capabilities
+        
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
           capabilities:
             drop: ["ALL"]
+            
         resources:
           requests:
             cpu: "100m"
@@ -39,14 +40,8 @@ spec:
           limits:
             cpu: "300m"
             memory: "256Mi"
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 8080 # 3. Updated probe to match the container port
-          initialDelaySeconds: 5
-          periodSeconds: 10
 
-        # 4. Mounted temporary writable storage so readOnlyRootFilesystem doesn't choke Nginx
+        # Mount the ephemeral scratch spaces into the container
         volumeMounts:
         - name: tmp-volume
           mountPath: /tmp
@@ -55,7 +50,7 @@ spec:
         - name: cache-volume
           mountPath: /var/cache/nginx
 
-      # 5. Declared the memory-backed volumes required by the mounts above
+      # Define the temporary memory-backed storage spaces
       volumes:
       - name: tmp-volume
         emptyDir: {}
