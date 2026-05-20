@@ -1,0 +1,31 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: block-high-critical-vulnerabilities
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+  - name: block-critical-vulns
+    match:
+      any:
+      - resources:
+          kinds: ["Pod"]
+    preconditions:
+      all:
+      - key: "{{request.operation}}"
+        operator: In
+        value: ["CREATE", "UPDATE"]
+    validate:
+      message: "Image {{element.image}} has HIGH or CRITICAL vulnerabilities and is blocked (DoD Policy)"
+      foreach:
+      - list: "request.object.spec.containers"
+        deny:
+          conditions:
+            all:
+            - key: "{{ vulnerabilities.critical | default(0) }}"
+              operator: GreaterThan
+              value: 0
+            - key: "{{ vulnerabilities.high | default(0) }}"
+              operator: GreaterThan
+              value: 5   # Allow max 5 HIGH, block more

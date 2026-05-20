@@ -1119,37 +1119,42 @@ kind: ClusterPolicy
 metadata:
   name: enforce-hardening-baseline
 spec:
-  validationFailureAction: Enforce     # Now it will block violations
+  validationFailureAction: Enforce
   background: true
   rules:
+  # Rule 1: Checks that runAsNonRoot is active at either Pod OR Container level safely
   - name: enforce-non-root
     match:
       any:
       - resources:
           kinds: ["Pod"]
     validate:
-      message: "DoD STIG: Pods must run as non-root user"
-      pattern:
-        spec:
+      message: "DoD STIG: Pods or containers must be configured to run as a non-root user."
+      anyPattern:
+      # Pattern A: Configured at the entire Pod level
+      - spec:
           securityContext:
             runAsNonRoot: true
+      # Pattern B: Explicitly configured on every individual container
+      - spec:
           containers:
           - securityContext:
               runAsNonRoot: true
 
+  # Rule 2: Loops through all containers and enforces readOnlyRootFilesystem
   - name: enforce-readonly-rootfs
     match:
       any:
       - resources:
           kinds: ["Pod"]
     validate:
-      message: "DoD Hardening: Root filesystem must be read-only"
+      message: "DoD Hardening: Root filesystem must be read-only for all containers."
       pattern:
         spec:
           containers:
+          # The element pattern checks every container in the array
           - securityContext:
               readOnlyRootFilesystem: true
-
 ```
 
 Apply the new policy:
@@ -1159,6 +1164,23 @@ Bash
 ```bash
 kubectl apply -f policies/enforce-hardening.yaml
 
+```
+---
+
+```text
+With the enforcement of Kyverno Policy, will actively blocking any deployment that doesn't explicitly declare your hardening rules. Can be fix by passing the proper security context parameters directly into the helm install command using --set flags. Such as:
+```
+```bash
+helm install trivy-operator aqua/trivy-operator \
+  --namespace trivy-system \
+  --create-namespace \
+  --set trivy.ignoreUnfixed=true \
+  --set operator.scanJobTimeout=5m \
+  --set podSecurityContext.runAsNonRoot=true \
+  --set podSecurityContext.runAsUser=10000 \
+  --set podSecurityContext.runAsGroup=10000 \
+  --set securityContext.runAsNonRoot=true \
+  --set securityContext.readOnlyRootFilesystem=true
 ```
 
 ---
@@ -1189,14 +1211,16 @@ spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: 101
+        runAsGroup: 101 # Added group consistency
         fsGroup: 101
 
       containers:
       - name: nginx
-        image: nginx:latest
+        # 1. Switched back to the unprivileged image to handle non-root seamlessly
+        image: nginxinc/nginx-unprivileged:1.27-alpine-slim
         imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 80
+        - containerPort: 8080 # 2. Shifted to unprivileged port
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
@@ -1212,10 +1236,27 @@ spec:
         readinessProbe:
           httpGet:
             path: /
-            port: 80
+            port: 8080 # 3. Updated probe to match the container port
           initialDelaySeconds: 5
           periodSeconds: 10
 
+        # 4. Mounted temporary writable storage so readOnlyRootFilesystem doesn't choke Nginx
+        volumeMounts:
+        - name: tmp-volume
+          mountPath: /tmp
+        - name: run-volume
+          mountPath: /var/run
+        - name: cache-volume
+          mountPath: /var/cache/nginx
+
+      # 5. Declared the memory-backed volumes required by the mounts above
+      volumes:
+      - name: tmp-volume
+        emptyDir: {}
+      - name: run-volume
+        emptyDir: {}
+      - name: cache-volume
+        emptyDir: {}
 ```
 
 **Commit and push**:
@@ -1287,7 +1328,12 @@ helm install trivy-operator aqua/trivy-operator \
   --namespace trivy-system \
   --create-namespace \
   --set trivy.ignoreUnfixed=true \
-  --set operator.scanJobTimeout=5m
+  --set operator.scanJobTimeout=5m \
+  --set podSecurityContext.runAsNonRoot=true \
+  --set podSecurityContext.runAsUser=10000 \
+  --set podSecurityContext.runAsGroup=10000 \
+  --set securityContext.runAsNonRoot=true \
+  --set securityContext.readOnlyRootFilesystem=true
 
 ```
 
@@ -1307,7 +1353,7 @@ Bash
 
 ```bash
 # Scan the nginx image
-trivy image nginx:latest --severity HIGH,CRITICAL
+trivy image nginxinc/nginx-unprivileged:1.27-alpine-slim --severity HIGH,CRITICAL
 
 # Scan your running deployment
 trivy k8s --report summary deployment/nginx-hardened -n production
@@ -1323,22 +1369,6 @@ trivy k8s --report summary deployment/nginx-hardened -n production
 Bash
 
 ```bash
-# 1. Install Trivy Operator
-helm repo add aqua https://aquasecurity.github.io/helm-charts/
-helm repo update
-
-helm install trivy-operator aqua/trivy-operator \
-  --namespace trivy-system \
-  --create-namespace \
-  --set trivy.ignoreUnfixed=true \
-  --set operator.scanJobTimeout=5m \
-  --set trivy.severity="CRITICAL,HIGH"
-
-```
-
-Bash
-
-```bash
 # 2. Install Policy Reporter (for beautiful dashboards)
 helm repo add policy-reporter https://kyverno.github.io/policy-reporter
 helm repo update
@@ -1347,6 +1377,14 @@ helm install policy-reporter policy-reporter/policy-reporter \
   --namespace policy-reporter \
   --create-namespace \
   --set ui.enabled=true
+
+```
+
+```bash
+# 3. Modify service policy-reporter-ui to NodePort to Access UI
+kubectl patch svc policy-reporter \
+  -n policy-reporter-ui \
+  -p '{"spec": {"type": "NodePort"}}'
 
 ```
 
