@@ -16,7 +16,7 @@ spec:
       serviceAccountName: nginx-hardened-sa
       # === Pod Level SecurityContext ===
       securityContext:
-        runAsNonRoot: true
+        #runAsNonRoot: true
         runAsUser: 101
         fsGroup: 101
 
