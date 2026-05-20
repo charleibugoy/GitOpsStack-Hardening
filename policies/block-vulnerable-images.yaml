@@ -11,13 +11,18 @@ spec:
       any:
       - resources:
           kinds: ["Pod"]
+    # ─── ADD THIS BLOCK TO EXPLICITLY PERMIT STATUS MATCHING ───
+    exclude:
+      any:
+      - resources:
+          subresources: ["status"]
+    # ───────────────────────────────────────────────────────────
     preconditions:
       all:
       - key: "{{request.operation}}"
         operator: In
         value: ["CREATE", "UPDATE"]
     validate:
-      # Use dynamic mapping to pull and display blocked images at the root layer
       message: "Admission blocked by DoD Policy. One or more images exceed vulnerability thresholds: {{ request.object.spec.containers[*].image }}"
       foreach:
       - list: "request.object.spec.containers"
