@@ -963,6 +963,13 @@ runAsNonRoot: true
 Even though you are using the excellent, minimal alpine-slim variant, the standard official Nginx Docker images are hardcoded to start as the root user because standard Nginx needs root privileges to bind to port 80.
 
 Since Kubernetes catches this, it blocks the container from starting completely.
+
+What Exactly Blocked It?
+The Port 80 Block: Standard Linux kernels restrict ports 1–1023 to the root user. By dropping ALL capabilities and running non-root, the container physically does not have permission to bind to port 80. Moving to 8080 satisfies the kernel.
+
+The Cache Block: Even the unprivileged version of Nginx needs to write temporary data. When readOnlyRootFilesystem is active, directories like /var/cache/nginx become read-only blocks.
+
+The Solution (emptyDir): An emptyDir volume creates a fresh, writable directory that lives purely in the Pod's temporary storage (RAM/node disk space). It isolates the writes to just those three specific folders while keeping the rest of the entire system strictly locked down.
 ```
 
 **Push** and verify pods still start successfully.
@@ -979,19 +986,22 @@ spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: 101
+        runAsGroup: 101
         fsGroup: 101
 
       containers:
       - name: nginx
-        image: nginx:latest
+        image: nginxinc/nginx-unprivileged:1.27-alpine-slim
         imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 80
+        - containerPort: 8080 # High port required for non-root / dropped capabilities
+        
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
           capabilities:
             drop: ["ALL"]
+            
         resources:
           requests:
             cpu: "100m"
@@ -1000,6 +1010,23 @@ spec:
             cpu: "300m"
             memory: "256Mi"
 
+        # Mount the ephemeral scratch spaces into the container
+        volumeMounts:
+        - name: tmp-volume
+          mountPath: /tmp
+        - name: run-volume
+          mountPath: /var/run
+        - name: cache-volume
+          mountPath: /var/cache/nginx
+
+      # Define the temporary memory-backed storage spaces
+      volumes:
+      - name: tmp-volume
+        emptyDir: {}
+      - name: run-volume
+        emptyDir: {}
+      - name: cache-volume
+        emptyDir: {}
 ```
 
 **Push again** and check if pods are still healthy.
@@ -1069,23 +1096,6 @@ kubectl get policyreport -A
 
 ---
 
-### **Action Now:**
-
-1. Update your deployment.yaml with **Phase 4.1** first.
-2. Push to Git.
-3. Apply the audit-hardening.yaml policy.
-4. Run:
-
-Bash
-
-```bash
-kubectl get pods -n production
-kubectl get policyreport -A
-
-```
-
----
-
 ### **Step 6: Move to Enforcement Mode (Gradually)**
 
 Now that we have a working base, let's switch the Kyverno policy to **Enforce** mode.
@@ -1093,6 +1103,13 @@ Now that we have a working base, let's switch the Kyverno policy to **Enforce** 
 #### Update the policy to enforcement:
 
 **policies/enforce-hardening.yaml** (replace the previous audit one)
+
+### Installing Kyverno (Requires Helm)
+```bash
+helm repo add kyverno https://kyverno.github.io/kyverno/
+helm repo update
+helm install kyverno kyverno/kyverno --namespace kyverno --create-namespace
+```
 
 YAML
 

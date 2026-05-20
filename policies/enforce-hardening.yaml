@@ -1,0 +1,41 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: enforce-hardening-baseline
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+  # Rule 1: Checks that runAsNonRoot is active at either Pod OR Container level safely
+  - name: enforce-non-root
+    match:
+      any:
+      - resources:
+          kinds: ["Pod"]
+    validate:
+      message: "DoD STIG: Pods or containers must be configured to run as a non-root user."
+      anyPattern:
+      # Pattern A: Configured at the entire Pod level
+      - spec:
+          securityContext:
+            runAsNonRoot: true
+      # Pattern B: Explicitly configured on every individual container
+      - spec:
+          containers:
+          - securityContext:
+              runAsNonRoot: true
+
+  # Rule 2: Loops through all containers and enforces readOnlyRootFilesystem
+  - name: enforce-readonly-rootfs
+    match:
+      any:
+      - resources:
+          kinds: ["Pod"]
+    validate:
+      message: "DoD Hardening: Root filesystem must be read-only for all containers."
+      pattern:
+        spec:
+          containers:
+          # The element pattern checks every container in the array
+          - securityContext:
+              readOnlyRootFilesystem: true
