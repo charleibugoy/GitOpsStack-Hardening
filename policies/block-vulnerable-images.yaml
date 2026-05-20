@@ -17,23 +17,20 @@ spec:
         operator: In
         value: ["CREATE", "UPDATE"]
     validate:
-      # The main message is now a fallback string
+      # This acts as the default fallback message required by the root validate block
       message: "Admission blocked due to DoD Vulnerability Policy thresholds."
       foreach:
       - list: "request.object.spec.containers"
-        # 1. Context lookup stays the same
         context:
         - name: imageVulnerabilities
           apiCall:
             urlPath: /apis/aquasecurity.github.io/v1alpha1/namespaces/{{request.namespace}}/vulnerabilityreports
             jmesPath: "items[?status.artifact.repository=='{{element.image}}'].status.summary | [0]"
         
-        # 2. MOVED MESSAGE HERE: This allows you to safely use {{element.image}}
-        elementProcessedWithMessage: true
-        message: "Image {{element.image}} is blocked. Critical vulns found: {{imageVulnerabilities.critical || '0'}}, High vulns found: {{imageVulnerabilities.high || '0'}} (Max allowed: 0 Critical, 5 High)."
-
-        # 3. Deny criteria
+        # The correct placement for custom messages in a foreach loop is inside the deny block
         deny:
+          elementProcessedWithMessage: true
+          message: "Image {{element.image}} is blocked. Critical vulns: {{imageVulnerabilities.critical || '0'}}, High vulns: {{imageVulnerabilities.high || '0'}} (Threshold: 0 Critical, 5 High)."
           conditions:
             any:
             - key: "{{ imageVulnerabilities.critical || `0` }}"
