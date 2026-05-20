@@ -959,7 +959,7 @@ Nginx (by default) tries to create/write to these directories at startup:
 
 With a read-only root filesystem, it fails.
 
-***runAsNonRoot: true
+runAsNonRoot: true
 Even though you are using the excellent, minimal alpine-slim variant, the standard official Nginx Docker images are hardcoded to start as the root user because standard Nginx needs root privileges to bind to port 80.
 
 Since Kubernetes catches this, it blocks the container from starting completely.

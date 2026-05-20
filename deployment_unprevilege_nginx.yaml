@@ -28,16 +28,3 @@ spec:
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080 # Unprivileged images use 8080 by default
-
-        securityContext:
-          allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: true
-          capabilities:
-            drop: ["ALL"]
-        resources:
-          requests:
-            cpu: "100m"
-            memory: "128Mi"
-          limits:
-            cpu: "300m"
-            memory: "256Mi"
