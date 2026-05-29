@@ -179,15 +179,6 @@ trivy --version
 
 ```
 
-### Install Lula
-
-```bash
-curl -L -o lula https://github.com/defenseunicorns/lula/releases/download/v0.11.0/lula_v0.11.0_Linux_amd64
-chmod +x lula
-sudo mv lula /usr/local/bin/
-
-```
-
 ---
 
 # AWS Credentials
@@ -267,7 +258,7 @@ aws ec2 describe-subnets \
 1. Clone Repository
 
 ```bash
-git clone [https://github.com/kodekloudhub/amazon-elastic-kubernetes-service-course](https://github.com/kodekloudhub/amazon-elastic-kubernetes-service-course)
+git clone https://github.com/kodekloudhub/amazon-elastic-kubernetes-service-course
 
 ```
 
@@ -403,7 +394,7 @@ chmod 400 node-key-pair.pem
 Use S3 URL:
 
 ```text
-[https://s3.us-west-2.amazonaws.com/amazon-eks/cloudformation/2022-12-23/amazon-eks-nodegroup.yaml](https://s3.us-west-2.amazonaws.com/amazon-eks/cloudformation/2022-12-23/amazon-eks-nodegroup.yaml)
+https://s3.us-west-2.amazonaws.com/amazon-eks/cloudformation/2022-12-23/amazon-eks-nodegroup.yaml
 
 ```
 
@@ -636,7 +627,7 @@ aws iam attach-role-policy --role-name EKSExternalSecretsRole --policy-arn arn:a
 
 ```bash
 kubectl annotate serviceaccount external-secrets -n external-secrets \
-  [eks.amazonaws.com/role-arn=arn:aws:iam::$](https://eks.amazonaws.com/role-arn=arn:aws:iam::$){ACCOUNT_ID}:role/EKSExternalSecretsRole
+  https://eks.amazonaws.com/role-arn=arn:aws:iam::${ACCOUNT_ID}:role/EKSExternalSecretsRole
 
 ```
 
@@ -1572,9 +1563,14 @@ spec:
 
 ### Initialize Lula
 
-```bash
-./lula ocm init
 
+
+```bash
+git clone https://github.com/defenseunicorns/lula.git
+cd lula
+make build
+# Move the binary to your path
+sudo mv bin/lula /usr/local/bin/
 ```
 
 Create a new folder:
